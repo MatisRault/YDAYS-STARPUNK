@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  # Service PHP pour Symfony
+  php:
+    image: php:8.2-fpm
+    container_name: php-symfony
+    volumes:
+      - ./backend:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - symfony
+
+  # Serveur Nginx
+  webserver:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - php
+    networks:
+      - symfony
+
+  # Base de données MySQL
+  db:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: symfony
+      MYSQL_USER: symfony_user
+      MYSQL_PASSWORD: symfony_pass
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - symfony
+
+  # Service Node.js pour React
+  node:
+    image: node:18-alpine
+    container_name: node-react
+    volumes:
+      - ./frontend:/usr/src/app
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm start"
+    ports:
+      - "3000:3000"
+    networks:
+      - symfony
+
+volumes:
+  db-data:
+
+networks:
+  symfony:
+    driver: bridge
